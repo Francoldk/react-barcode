@@ -1,69 +1,309 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import Barcode from 'react-barcode';
+
+export default function LabelGenerator() {
+  const [customerId, setCustomerId] = useState('A-1-800214147374');
+  const [totalCartons, setTotalCartons] = useState(8);
+  const [qrPrefix, setQrPrefix] = useState('https://dechinaalmundo.com/track?id=');
+
+  const cartons = Array.from({ length: Math.max(1, Number(totalCartons)) }, (_, i) => i + 1);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={styles.container}>
+      {/* PANEL DE CONTROL (Oculto al imprimir) */}
+      <div style={styles.controlPanel} className="no-print">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <img src="/logo.png" alt="Logo" style={{ height: '36px' }} />
+          <div>
+            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador de Etiquetas DCAM</h2>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Formato oficial Warehouse Shipping Label</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+
+        <div style={styles.gridInputs}>
+          <div>
+            <label style={styles.label}>Customer ID / Envío:</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              placeholder="Ej: A-1-800214147374"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          <div>
+            <label style={styles.label}>Total de Cajas / Bultos:</label>
+            <input
+              style={styles.input}
+              type="number"
+              min="1"
+              max="200"
+              value={totalCartons}
+              onChange={(e) => setTotalCartons(Math.max(1, Number(e.target.value)))}
+            />
+          </div>
+
+          <div>
+            <label style={styles.label}>Prefijo / URL del QR:</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={qrPrefix}
+              onChange={(e) => setQrPrefix(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
         </div>
-      </main>
+
+        <button style={styles.printBtn} onClick={() => window.print()}>
+          🖨️ Imprimir Etiquetas / Guardar PDF
+        </button>
+      </div>
+
+      {/* GRILLA DE ETIQUETAS */}
+      <div style={styles.labelsGrid} className="print-area">
+        {cartons.map((num) => {
+          const cartonSuffix = String(num).padStart(3, '0');
+          const totalSuffix = String(totalCartons).padStart(3, '0');
+          const uniqueBarcodeValue = `${customerId}-${cartonSuffix}-${totalSuffix}`;
+          const qrDataValue = `${qrPrefix}${uniqueBarcodeValue}`;
+
+          return (
+            <div key={num} style={styles.labelCard}>
+              <div style={styles.labelInnerBorder}>
+                {/* 1. ENCABEZADO */}
+                <div style={styles.labelHeader}>
+                  <div style={styles.logoBox}>
+                    <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
+                  </div>
+
+                  <div style={styles.dividerVertical}></div>
+
+                  <div style={styles.headerTitleBox}>
+                    <div style={styles.headerTitle}>WAREHOUSE</div>
+                    <div style={styles.headerTitle}>SHIPPING LABEL</div>
+                  </div>
+                </div>
+
+                {/* 2. CUERPO (3 SECCIONES) */}
+                <div style={styles.labelBody}>
+                  {/* COLUMNA 1: CARTON NO */}
+                  <div style={styles.sectionCol}>
+                    <div style={styles.badgeHeader}>• CARTON NO.</div>
+                    <div style={styles.cartonNumber}>
+                      {num} OF {totalCartons}
+                    </div>
+                  </div>
+
+                  {/* COLUMNA 2: QR CODE */}
+                  <div style={styles.sectionCol}>
+                    <div style={styles.badgeHeader}>• QR CODE</div>
+                    <div style={styles.qrWrapper}>
+                      <QRCodeSVG value={qrDataValue} size={68} level="M" />
+                    </div>
+                  </div>
+
+                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
+                  <div style={{ ...styles.sectionCol, flex: 1.45 }}>
+                    <div style={styles.badgeHeader}>• CUSTOMER ID</div>
+                    <div style={styles.customerIdText}>{customerId}</div>
+                    <div style={styles.barcodeWrapper}>
+                      <Barcode
+                        value={uniqueBarcodeValue}
+                        width={0.75}
+                        height={26}
+                        fontSize={6}
+                        margin={0}
+                        displayValue={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ESTILOS DE IMPRESIÓN DIRECTA */}
+      <style jsx global>{`
+        @media print {
+          body {
+            background: #fff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-area {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+            width: 100% !important;
+            padding: 8px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    minHeight: '100vh',
+    background: '#f8fafc',
+    padding: '24px',
+    fontFamily: '"Helvetica Neue", Arial, sans-serif'
+  },
+  controlPanel: {
+    background: '#ffffff',
+    borderRadius: '12px',
+    padding: '20px',
+    maxWidth: '850px',
+    margin: '0 auto 28px auto',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+    border: '1px solid #e2e8f0'
+  },
+  gridInputs: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '14px',
+    marginBottom: '16px'
+  },
+  label: {
+    display: 'block',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#334155',
+    marginBottom: '6px'
+  },
+  input: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '9px 12px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    fontSize: '13px'
+  },
+  printBtn: {
+    background: '#b91c1c',
+    color: '#fff',
+    border: 'none',
+    padding: '12px 20px',
+    borderRadius: '6px',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    cursor: 'pointer',
+    width: '100%'
+  },
+  labelsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 420px))',
+    gap: '16px',
+    justifyContent: 'center'
+  },
+  labelCard: {
+    background: '#ffffff',
+    border: '2.5px solid #881337',
+    borderRadius: '16px',
+    padding: '4px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+    boxSizing: 'border-box',
+    pageBreakInside: 'avoid'
+  },
+  labelInnerBorder: {
+    border: '1.5px solid #eab308',
+    borderRadius: '12px',
+    padding: '10px'
+  },
+  labelHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '8px',
+    marginBottom: '8px'
+  },
+  logoBox: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  logoImg: {
+    maxHeight: '46px',
+    maxWidth: '125px',
+    objectFit: 'contain'
+  },
+  dividerVertical: {
+    width: '1.5px',
+    height: '42px',
+    background: '#881337',
+    margin: '0 10px'
+  },
+  headerTitleBox: {
+    flex: 1.3,
+    textAlign: 'center'
+  },
+  headerTitle: {
+    fontSize: '13px',
+    fontWeight: '900',
+    color: '#881337',
+    letterSpacing: '0.5px'
+  },
+  labelBody: {
+    display: 'flex',
+    gap: '6px'
+  },
+  sectionCol: {
+    flex: 1,
+    border: '1.5px solid #881337',
+    borderRadius: '8px',
+    padding: '5px 4px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: '100px',
+    boxSizing: 'border-box'
+  },
+  badgeHeader: {
+    fontSize: '8px',
+    fontWeight: 'bold',
+    color: '#881337',
+    textTransform: 'uppercase',
+    borderBottom: '1px solid #f1f5f9',
+    width: '100%',
+    paddingBottom: '3px',
+    marginBottom: '3px'
+  },
+  cartonNumber: {
+    fontSize: '18px',
+    fontWeight: '900',
+    color: '#0f172a',
+    margin: 'auto 0'
+  },
+  qrWrapper: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 'auto 0'
+  },
+  customerIdText: {
+    fontSize: '9px',
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: '2px'
+  },
+  barcodeWrapper: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    overflow: 'hidden'
+  }
+};
