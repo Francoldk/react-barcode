@@ -13,13 +13,33 @@ export default function LabelGenerator() {
 
   return (
     <div style={styles.container}>
-      {/* PANEL DE CONTROL (Oculto al imprimir) */}
+      <style>{`
+        @media print {
+          body {
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-area {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+            width: 100% !important;
+            padding: 8px !important;
+          }
+        }
+      `}</style>
+
+      {/* PANEL DE CONTROL */}
       <div style={styles.controlPanel} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           <img src="/logo.png" alt="Logo" style={{ height: '36px' }} />
           <div>
             <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador de Etiquetas DCAM</h2>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Formato oficial Warehouse Shipping Label</p>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Warehouse Shipping Label</p>
           </div>
         </div>
 
@@ -89,9 +109,9 @@ export default function LabelGenerator() {
                   </div>
                 </div>
 
-                {/* 2. CUERPO (3 SECCIONES) */}
+                {/* 2. CUERPO */}
                 <div style={styles.labelBody}>
-                  {/* COLUMNA 1: CARTON NO */}
+                  {/* COLUMNA 1 */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• CARTON NO.</div>
                     <div style={styles.cartonNumber}>
@@ -99,7 +119,7 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 2: QR CODE */}
+                  {/* COLUMNA 2 */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• QR CODE</div>
                     <div style={styles.qrWrapper}>
@@ -107,7 +127,7 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
+                  {/* COLUMNA 3 */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
                     <div style={styles.badgeHeader}>• CUSTOMER ID</div>
                     <div style={styles.customerIdText}>{customerId}</div>
@@ -128,32 +148,11 @@ export default function LabelGenerator() {
           );
         })}
       </div>
-
-      {/* ESTILOS DE IMPRESIÓN DIRECTA */}
-      <style jsx global>{`
-        @media print {
-          body {
-            background: #fff !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-area {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-            width: 100% !important;
-            padding: 8px !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
-const styles = {
+const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     background: '#f8fafc',
