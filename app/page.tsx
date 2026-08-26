@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
   const [customerId, setCustomerId] = useState('A-1-800214147374');
-  const [totalCartons, setTotalCartons] = useState(8);
+  const [trackingNumber, setTrackingNumber] = useState('SF13489201948');
+  const [totalCartons, setTotalCartons] = useState(1);
   const [qrPrefix, setQrPrefix] = useState('https://dechinaalmundo.com/track?id=');
 
-  const cartons = Array.from({ length: Math.max(1, Number(totalCartons)) }, (_, i) => i + 1);
+  const total = Math.max(1, Number(totalCartons) || 1);
+  const cartons = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
     <div style={styles.container}>
@@ -36,16 +38,16 @@ export default function LabelGenerator() {
       {/* PANEL DE CONTROL */}
       <div style={styles.controlPanel} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <img src="/logo.png" alt="Logo" style={{ height: '36px' }} />
+          <img src="/logo.png" alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />
           <div>
             <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador de Etiquetas DCAM</h2>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Warehouse Shipping Label</p>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Warehouse Shipping Label oficial</p>
           </div>
         </div>
 
         <div style={styles.gridInputs}>
           <div>
-            <label style={styles.label}>Customer ID / Envío:</label>
+            <label style={styles.label}>Customer ID:</label>
             <input
               style={styles.input}
               type="text"
@@ -56,12 +58,23 @@ export default function LabelGenerator() {
           </div>
 
           <div>
-            <label style={styles.label}>Total de Cajas / Bultos:</label>
+            <label style={styles.label}>N° Seguimiento Origen (Tracking):</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="Ej: SF13489201948 / YT2049..."
+            />
+          </div>
+
+          <div>
+            <label style={styles.label}>Cantidad de Cajas / Bultos:</label>
             <input
               style={styles.input}
               type="number"
               min="1"
-              max="200"
+              max="300"
               value={totalCartons}
               onChange={(e) => setTotalCartons(Math.max(1, Number(e.target.value)))}
             />
@@ -80,17 +93,25 @@ export default function LabelGenerator() {
         </div>
 
         <button style={styles.printBtn} onClick={() => window.print()}>
-          🖨️ Imprimir Etiquetas / Guardar PDF
+          🖨️ Imprimir Etiquetas ({total} {total === 1 ? 'bulto' : 'bultos'}) / Guardar PDF
         </button>
       </div>
 
       {/* GRILLA DE ETIQUETAS */}
       <div style={styles.labelsGrid} className="print-area">
         {cartons.map((num) => {
+          // Si es 1 sola caja se formatea directo, si son varias se agrega el índice de bulto
+          const isMultiple = total > 1;
           const cartonSuffix = String(num).padStart(3, '0');
-          const totalSuffix = String(totalCartons).padStart(3, '0');
-          const uniqueBarcodeValue = `${customerId}-${cartonSuffix}-${totalSuffix}`;
-          const qrDataValue = `${qrPrefix}${uniqueBarcodeValue}`;
+          const totalSuffix = String(total).padStart(3, '0');
+          
+          const barcodeValue = isMultiple
+            ? `${customerId}-${cartonSuffix}-${totalSuffix}`
+            : customerId;
+
+          const qrDataValue = isMultiple
+            ? `${qrPrefix}${customerId}?track=${trackingNumber}&box=${num}_${total}`
+            : `${qrPrefix}${customerId}?track=${trackingNumber}`;
 
           return (
             <div key={num} style={styles.labelCard}>
@@ -106,20 +127,25 @@ export default function LabelGenerator() {
                   <div style={styles.headerTitleBox}>
                     <div style={styles.headerTitle}>WAREHOUSE</div>
                     <div style={styles.headerTitle}>SHIPPING LABEL</div>
+                    {trackingNumber && (
+                      <div style={styles.trackingText}>
+                        TRACK: <strong>{trackingNumber}</strong>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 2. CUERPO */}
+                {/* 2. CUERPO (3 COLUMNAS) */}
                 <div style={styles.labelBody}>
-                  {/* COLUMNA 1 */}
+                  {/* COLUMNA 1: CARTON NO */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• CARTON NO.</div>
                     <div style={styles.cartonNumber}>
-                      {num} OF {totalCartons}
+                      {num} OF {total}
                     </div>
                   </div>
 
-                  {/* COLUMNA 2 */}
+                  {/* COLUMNA 2: QR CODE */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• QR CODE</div>
                     <div style={styles.qrWrapper}>
@@ -127,15 +153,15 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 3 */}
+                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
                     <div style={styles.badgeHeader}>• CUSTOMER ID</div>
                     <div style={styles.customerIdText}>{customerId}</div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
-                        value={uniqueBarcodeValue}
+                        value={barcodeValue}
                         width={0.75}
-                        height={26}
+                        height={24}
                         fontSize={6}
                         margin={0}
                         displayValue={true}
@@ -170,7 +196,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '14px',
     marginBottom: '16px'
   },
@@ -240,7 +266,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dividerVertical: {
     width: '1.5px',
-    height: '42px',
+    height: '46px',
     background: '#881337',
     margin: '0 10px'
   },
@@ -253,6 +279,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: '900',
     color: '#881337',
     letterSpacing: '0.5px'
+  },
+  trackingText: {
+    fontSize: '8px',
+    color: '#475569',
+    marginTop: '2px',
+    wordBreak: 'break-all'
   },
   labelBody: {
     display: 'flex',
