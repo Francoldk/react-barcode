@@ -5,11 +5,20 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
-  const [customerId, setCustomerId] = useState('A-1-800214147374');
-  const [totalCartons, setTotalCartons] = useState(8);
-  const [qrPrefix, setQrPrefix] = useState('https://dechinaalmundo.com/track?id=');
+  const [clientName, setClientName] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [totalCartons, setTotalCartons] = useState('');
 
-  const cartons = Array.from({ length: Math.max(1, Number(totalCartons)) }, (_, i) => i + 1);
+  // Formatear tracking para que termine siempre en -ARG si tiene valor
+  const formattedTracking = trackingNumber.trim()
+    ? trackingNumber.trim().toUpperCase().endsWith('-ARG')
+      ? trackingNumber.trim().toUpperCase()
+      : `${trackingNumber.trim().toUpperCase()}-ARG`
+    : '';
+
+  const parsedTotal = Math.max(1, parseInt(totalCartons, 10) || 1);
+  const cartons = Array.from({ length: parsedTotal }, (_, i) => i + 1);
 
   return (
     <div style={styles.container}>
@@ -25,6 +34,17 @@ export default function LabelGenerator() {
 
         <div style={styles.gridInputs}>
           <div>
+            <label style={styles.label}>Nombre del Cliente / Client Name:</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder="Ej: Juan Pérez"
+            />
+          </div>
+
+          <div>
             <label style={styles.label}>Customer ID / Envío:</label>
             <input
               style={styles.input}
@@ -36,31 +56,32 @@ export default function LabelGenerator() {
           </div>
 
           <div>
+            <label style={styles.label}>Nº Seguimiento Origen (Tracking):</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="Ej: SF13489201948 (se añade -ARG solo)"
+            />
+          </div>
+
+          <div>
             <label style={styles.label}>Total de Cajas / Bultos:</label>
             <input
               style={styles.input}
               type="number"
               min="1"
-              max="200"
+              max="500"
               value={totalCartons}
-              onChange={(e) => setTotalCartons(Math.max(1, Number(e.target.value)))}
-            />
-          </div>
-
-          <div>
-            <label style={styles.label}>Prefijo / URL del QR:</label>
-            <input
-              style={styles.input}
-              type="text"
-              value={qrPrefix}
-              onChange={(e) => setQrPrefix(e.target.value)}
-              placeholder="https://..."
+              onChange={(e) => setTotalCartons(e.target.value)}
+              placeholder="Ej: 3"
             />
           </div>
         </div>
 
         <button style={styles.printBtn} onClick={() => window.print()}>
-          🖨️ Imprimir Etiquetas / Guardar PDF
+          🖨️ Imprimir Etiquetas ({totalCartons || 1} {totalCartons === '1' ? 'bulto' : 'bultos'}) / Guardar PDF
         </button>
       </div>
 
@@ -68,14 +89,25 @@ export default function LabelGenerator() {
       <div style={styles.labelsGrid} className="print-area">
         {cartons.map((num) => {
           const cartonSuffix = String(num).padStart(3, '0');
-          const totalSuffix = String(totalCartons).padStart(3, '0');
-          const uniqueBarcodeValue = `${customerId}-${cartonSuffix}-${totalSuffix}`;
-          const qrDataValue = `${qrPrefix}${uniqueBarcodeValue}`;
+          const totalSuffix = String(parsedTotal).padStart(3, '0');
+          const uniqueBarcodeValue = customerId
+            ? `${customerId}-${cartonSuffix}-${totalSuffix}`
+            : `DCAM-${cartonSuffix}-${totalSuffix}`;
+
+          // Estructura del QR bilingüe con datos reales
+          const qrTextData = [
+            '📦 DE CHINA AL MUNDO',
+            'Control de Carga / Cargo Control',
+            `Guía/Tracking: #DCAM ${customerId || 'N/A'}`,
+            `Cliente/Client: ${clientName || 'N/A'}`,
+            `Bultos/Cartons: ${num} / ${parsedTotal}`,
+            formattedTracking ? `Nº Seguimiento/Tracking No: ${formattedTracking}` : null
+          ].filter(Boolean).join('\n');
 
           return (
             <div key={num} style={styles.labelCard}>
               <div style={styles.labelInnerBorder}>
-                {/* 1. ENCABEZADO MODIFICADO PARA SHIPPNG MARK */}
+                {/* 1. ENCABEZADO */}
                 <div style={styles.labelHeader}>
                   <div style={styles.logoBox}>
                     <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
@@ -86,6 +118,9 @@ export default function LabelGenerator() {
                   <div style={styles.headerTitleBox}>
                     <div style={styles.chineseTitle}>船標</div>
                     <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
+                    {formattedTracking && (
+                      <div style={styles.trackingHeader}>TRACK: {formattedTracking}</div>
+                    )}
                   </div>
                 </div>
 
@@ -95,27 +130,27 @@ export default function LabelGenerator() {
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• CARTON NO.</div>
                     <div style={styles.cartonNumber}>
-                      {num} OF {totalCartons}
+                      {num} OF {parsedTotal}
                     </div>
                   </div>
 
-                  {/* COLUMNA 2: QR CODE */}
+                  {/* COLUMNA 2: QR CODE DINÁMICO */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• QR CODE</div>
                     <div style={styles.qrWrapper}>
-                      <QRCodeSVG value={qrDataValue} size={68} level="M" />
+                      <QRCodeSVG value={qrTextData} size={68} level="M" />
                     </div>
                   </div>
 
                   {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
                     <div style={styles.badgeHeader}>• CUSTOMER ID</div>
-                    <div style={styles.customerIdText}>{customerId}</div>
+                    <div style={styles.customerIdText}>{customerId || 'SIN ASIGNAR'}</div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
                         value={uniqueBarcodeValue}
                         width={0.75}
-                        height={26}
+                        height={24}
                         fontSize={6}
                         margin={0}
                         displayValue={true}
@@ -171,7 +206,7 @@ const styles = {
   },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '14px',
     marginBottom: '16px'
   },
@@ -225,8 +260,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: '8px',
-    marginBottom: '8px'
+    paddingBottom: '6px',
+    marginBottom: '6px'
   },
   logoBox: {
     flex: 1,
@@ -235,8 +270,8 @@ const styles = {
     alignItems: 'center'
   },
   logoImg: {
-    maxHeight: '46px',
-    maxWidth: '125px',
+    maxHeight: '44px',
+    maxWidth: '120px',
     objectFit: 'contain'
   },
   dividerVertical: {
@@ -264,6 +299,12 @@ const styles = {
     fontWeight: '900',
     color: '#881337',
     letterSpacing: '0.5px',
+    marginTop: '1px'
+  },
+  trackingHeader: {
+    fontSize: '9px',
+    fontWeight: 'bold',
+    color: '#475569',
     marginTop: '2px'
   },
   labelBody: {
