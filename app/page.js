@@ -75,7 +75,7 @@ export default function LabelGenerator() {
           return (
             <div key={num} style={styles.labelCard}>
               <div style={styles.labelInnerBorder}>
-                {/* 1. ENCABEZADO */}
+                {/* 1. ENCABEZADO MODIFICADO PARA SHIPPNG MARK */}
                 <div style={styles.labelHeader}>
                   <div style={styles.logoBox}>
                     <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
@@ -84,8 +84,8 @@ export default function LabelGenerator() {
                   <div style={styles.dividerVertical}></div>
 
                   <div style={styles.headerTitleBox}>
-                    <div style={styles.headerTitle}>WAREHOUSE</div>
-                    <div style={styles.headerTitle}>SHIPPING LABEL</div>
+                    <div style={styles.chineseTitle}>船標</div>
+                    <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
                   </div>
                 </div>
 
@@ -247,13 +247,24 @@ const styles = {
   },
   headerTitleBox: {
     flex: 1.3,
-    textAlign: 'center'
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center'
   },
-  headerTitle: {
-    fontSize: '13px',
+  chineseTitle: {
+    fontSize: '16px',
     fontWeight: '900',
     color: '#881337',
-    letterSpacing: '0.5px'
+    letterSpacing: '3px',
+    lineHeight: '1.1'
+  },
+  companySubTitle: {
+    fontSize: '11px',
+    fontWeight: '900',
+    color: '#881337',
+    letterSpacing: '0.5px',
+    marginTop: '2px'
   },
   labelBody: {
     display: 'flex',
