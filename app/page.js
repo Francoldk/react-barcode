@@ -6,15 +6,14 @@ import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
   const [clientName, setClientName] = useState('');
-  const [customerId, setCustomerId] = useState('');
-  const [trackingNumber, setTrackingNumber] = useState('');
+  const [trackingId, setTrackingId] = useState('');
   const [totalCartons, setTotalCartons] = useState('');
 
-  // Formatear tracking para que termine siempre en -ARG si tiene valor
-  const formattedTracking = trackingNumber.trim()
-    ? trackingNumber.trim().toUpperCase().endsWith('-ARG')
-      ? trackingNumber.trim().toUpperCase()
-      : `${trackingNumber.trim().toUpperCase()}-ARG`
+  // Formatear tracking/ID para asegurar el sufijo -ARG
+  const formattedId = trackingId.trim()
+    ? trackingId.trim().toUpperCase().endsWith('-ARG')
+      ? trackingId.trim().toUpperCase()
+      : `${trackingId.trim().toUpperCase()}-ARG`
     : '';
 
   const parsedTotal = Math.max(1, parseInt(totalCartons, 10) || 1);
@@ -45,24 +44,13 @@ export default function LabelGenerator() {
           </div>
 
           <div>
-            <label style={styles.label}>Customer ID / Envío:</label>
+            <label style={styles.label}>Customer ID / Seguimiento (Tracking):</label>
             <input
               style={styles.input}
               type="text"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              placeholder="Ej: A-1-800214147374"
-            />
-          </div>
-
-          <div>
-            <label style={styles.label}>Nº Seguimiento Origen (Tracking):</label>
-            <input
-              style={styles.input}
-              type="text"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              placeholder="Ej: SF13489201948 (se añade -ARG solo)"
+              value={trackingId}
+              onChange={(e) => setTrackingId(e.target.value)}
+              placeholder="Ej: A-1-800214147374 (agrega -ARG solo)"
             />
           </div>
 
@@ -90,19 +78,18 @@ export default function LabelGenerator() {
         {cartons.map((num) => {
           const cartonSuffix = String(num).padStart(3, '0');
           const totalSuffix = String(parsedTotal).padStart(3, '0');
-          const uniqueBarcodeValue = customerId
-            ? `${customerId}-${cartonSuffix}-${totalSuffix}`
+          const uniqueBarcodeValue = formattedId
+            ? `${formattedId}-${cartonSuffix}-${totalSuffix}`
             : `DCAM-${cartonSuffix}-${totalSuffix}`;
 
-          // Estructura del QR bilingüe con datos reales
+          // Contenido estructurado dentro del QR
           const qrTextData = [
             '📦 DE CHINA AL MUNDO',
             'Control de Carga / Cargo Control',
-            `Guía/Tracking: #DCAM ${customerId || 'N/A'}`,
+            `Guía/Tracking: #DCAM ${formattedId || 'N/A'}`,
             `Cliente/Client: ${clientName || 'N/A'}`,
-            `Bultos/Cartons: ${num} / ${parsedTotal}`,
-            formattedTracking ? `Nº Seguimiento/Tracking No: ${formattedTracking}` : null
-          ].filter(Boolean).join('\n');
+            `Bultos/Cartons: ${num} / ${parsedTotal}`
+          ].join('\n');
 
           return (
             <div key={num} style={styles.labelCard}>
@@ -118,8 +105,8 @@ export default function LabelGenerator() {
                   <div style={styles.headerTitleBox}>
                     <div style={styles.chineseTitle}>船標</div>
                     <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
-                    {formattedTracking && (
-                      <div style={styles.trackingHeader}>TRACK: {formattedTracking}</div>
+                    {formattedId && (
+                      <div style={styles.trackingHeader}>TRACK: {formattedId}</div>
                     )}
                   </div>
                 </div>
@@ -145,7 +132,7 @@ export default function LabelGenerator() {
                   {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
                     <div style={styles.badgeHeader}>• CUSTOMER ID</div>
-                    <div style={styles.customerIdText}>{customerId || 'SIN ASIGNAR'}</div>
+                    <div style={styles.customerIdText}>{formattedId || 'SIN ASIGNAR'}</div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
                         value={uniqueBarcodeValue}
@@ -206,7 +193,7 @@ const styles = {
   },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
     gap: '14px',
     marginBottom: '16px'
   },
