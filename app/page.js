@@ -5,15 +5,17 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
+  const [shippingMarkCode, setShippingMarkCode] = useState('836');
   const [clientName, setClientName] = useState('');
-  const [trackingId, setTrackingId] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [productDesc, setProductDesc] = useState('');
   const [totalCartons, setTotalCartons] = useState('');
 
-  // Formatear tracking/ID para asegurar el sufijo -ARG
-  const formattedId = trackingId.trim()
-    ? trackingId.trim().toUpperCase().endsWith('-ARG')
-      ? trackingId.trim().toUpperCase()
-      : `${trackingId.trim().toUpperCase()}-ARG`
+  // Formatear identificador para asegurar sufijo -ARG
+  const formattedId = customerId.trim()
+    ? customerId.trim().toUpperCase().endsWith('-ARG')
+      ? customerId.trim().toUpperCase()
+      : `${customerId.trim().toUpperCase()}-ARG`
     : '';
 
   const parsedTotal = Math.max(1, parseInt(totalCartons, 10) || 1);
@@ -24,38 +26,60 @@ export default function LabelGenerator() {
       {/* PANEL DE CONTROL (Oculto al imprimir) */}
       <div style={styles.controlPanel} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <img src="/logo.png" alt="Logo" style={{ height: '36px' }} />
+          <div style={styles.shipIconHeader}>🚢</div>
           <div>
-            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador de Etiquetas DCAM</h2>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Formato oficial Warehouse Shipping Label</p>
+            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador Universal de Shipping Marks</h2>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Etiquetas neutras para consolidación marítima y contenedores</p>
           </div>
         </div>
 
         <div style={styles.gridInputs}>
           <div>
-            <label style={styles.label}>Nombre del Cliente / Client Name:</label>
+            <label style={styles.label}>Código Shipping Mark (船標):</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={shippingMarkCode}
+              onChange={(e) => setShippingMarkCode(e.target.value)}
+              placeholder="Ej: 836"
+            />
+          </div>
+
+          <div>
+            <label style={styles.label}>Nombre / Vendedor / Cliente:</label>
             <input
               style={styles.input}
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="Ej: Juan Pérez"
+              placeholder="Ej: Global Imports"
             />
           </div>
 
           <div>
-            <label style={styles.label}>Customer ID / Seguimiento (Tracking):</label>
+            <label style={styles.label}>ID / Tracking:</label>
             <input
               style={styles.input}
               type="text"
-              value={trackingId}
-              onChange={(e) => setTrackingId(e.target.value)}
-              placeholder="Ej: A-1-800214147374 (agrega -ARG solo)"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              placeholder="Ej: DC-80021 (agrega -ARG)"
             />
           </div>
 
           <div>
-            <label style={styles.label}>Total de Cajas / Bultos:</label>
+            <label style={styles.label}>Producto / Mercadería:</label>
+            <input
+              style={styles.input}
+              type="text"
+              value={productDesc}
+              onChange={(e) => setProductDesc(e.target.value)}
+              placeholder="Ej: Auto Parts / Repuestos"
+            />
+          </div>
+
+          <div>
+            <label style={styles.label}>Cantidad de Bultos / Cajas:</label>
             <input
               style={styles.input}
               type="number"
@@ -63,7 +87,7 @@ export default function LabelGenerator() {
               max="500"
               value={totalCartons}
               onChange={(e) => setTotalCartons(e.target.value)}
-              placeholder="Ej: 3"
+              placeholder="Ej: 10"
             />
           </div>
         </div>
@@ -80,38 +104,63 @@ export default function LabelGenerator() {
           const totalSuffix = String(parsedTotal).padStart(3, '0');
           const uniqueBarcodeValue = formattedId
             ? `${formattedId}-${cartonSuffix}-${totalSuffix}`
-            : `DCAM-${cartonSuffix}-${totalSuffix}`;
+            : `SHIP-${shippingMarkCode}-${cartonSuffix}-${totalSuffix}`;
 
-          // Contenido estructurado dentro del QR
+          // Contenido técnico del QR sin marcas comerciales
           const qrTextData = [
-            '📦 DE CHINA AL MUNDO',
-            'Control de Carga / Cargo Control',
-            `Guía/Tracking: #DCAM ${formattedId || 'N/A'}`,
-            `Cliente/Client: ${clientName || 'N/A'}`,
-            `Bultos/Cartons: ${num} / ${parsedTotal}`
+            `SHIPPING MARK: 船標 ${shippingMarkCode || 'N/A'}`,
+            `NAME / VENDOR: ${clientName || 'N/A'}`,
+            `CARGO ID: ${formattedId || 'N/A'}`,
+            `PRODUCT: ${productDesc || 'GENERAL CARGO'}`,
+            `CARTON: ${num} / ${parsedTotal}`
           ].join('\n');
 
           return (
             <div key={num} style={styles.labelCard}>
               <div style={styles.labelInnerBorder}>
-                {/* 1. ENCABEZADO */}
+                
+                {/* 1. ENCABEZADO NEUTRAL MARÍTIMO */}
                 <div style={styles.labelHeader}>
-                  <div style={styles.logoBox}>
-                    <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
+                  <div style={styles.iconBox}>
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#881337" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      {/* Barco portacontenedores técnico */}
+                      <path d="M2 19c2 1 4 1 6 0 2-1 4-1 6 0 2 1 4 1 6 0" />
+                      <path d="M3 15l2-6h14l2 6H3z" />
+                      <path d="M6 9V5h12v4" />
+                      <line x1="10" y1="5" x2="10" y2="9" />
+                      <line x1="14" y1="5" x2="14" y2="9" />
+                      <circle cx="12" cy="12" r="1" fill="#881337" />
+                    </svg>
+                    <span style={styles.oceanTag}>OCEAN FREIGHT</span>
                   </div>
 
                   <div style={styles.dividerVertical}></div>
 
                   <div style={styles.headerTitleBox}>
-                    <div style={styles.chineseTitle}>船標</div>
-                    <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
-                    {formattedId && (
-                      <div style={styles.trackingHeader}>TRACK: {formattedId}</div>
-                    )}
+                    <div style={styles.chineseTitle}>
+                      船標 <span style={styles.markCode}>{shippingMarkCode || '---'}</span>
+                    </div>
+                    <div style={styles.subShippingMark}>SHIPPING MARK / MARCA DE EMBARQUE</div>
                   </div>
                 </div>
 
-                {/* 2. CUERPO (3 SECCIONES) */}
+                {/* FILA DE DATOS ESPECÍFICOS: NOMBRE / ID / PRODUCTO */}
+                <div style={styles.dataMetaRow}>
+                  <div style={styles.metaItem}>
+                    <span style={styles.metaLabel}>NAME:</span>
+                    <span style={styles.metaValue}>{clientName || '---'}</span>
+                  </div>
+                  <div style={styles.metaItem}>
+                    <span style={styles.metaLabel}>ID:</span>
+                    <span style={styles.metaValue}>{formattedId || '---'}</span>
+                  </div>
+                  <div style={styles.metaItem}>
+                    <span style={styles.metaLabel}>PROD:</span>
+                    <span style={styles.metaValue}>{productDesc || 'GENERAL CARGO'}</span>
+                  </div>
+                </div>
+
+                {/* 2. CUERPO: CARTON NO, QR Y CÓDIGO DE BARRAS */}
                 <div style={styles.labelBody}>
                   {/* COLUMNA 1: CARTON NO */}
                   <div style={styles.sectionCol}>
@@ -121,23 +170,23 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 2: QR CODE DINÁMICO */}
+                  {/* COLUMNA 2: QR CODE */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• QR CODE</div>
                     <div style={styles.qrWrapper}>
-                      <QRCodeSVG value={qrTextData} size={68} level="M" />
+                      <QRCodeSVG value={qrTextData} size={64} level="M" />
                     </div>
                   </div>
 
-                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
+                  {/* COLUMNA 3: BARCODE ID */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
-                    <div style={styles.badgeHeader}>• CUSTOMER ID</div>
-                    <div style={styles.customerIdText}>{formattedId || 'SIN ASIGNAR'}</div>
+                    <div style={styles.badgeHeader}>• CARGO TRACK ID</div>
+                    <div style={styles.customerIdText}>{formattedId || `SHIP-${shippingMarkCode}`}</div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
                         value={uniqueBarcodeValue}
                         width={0.75}
-                        height={24}
+                        height={22}
                         fontSize={6}
                         margin={0}
                         displayValue={true}
@@ -145,13 +194,14 @@ export default function LabelGenerator() {
                     </div>
                   </div>
                 </div>
+
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* ESTILOS DE IMPRESIÓN DIRECTA */}
+      {/* ESTILOS DE IMPRESIÓN */}
       <style jsx global>{`
         @media print {
           body {
@@ -186,20 +236,24 @@ const styles = {
     background: '#ffffff',
     borderRadius: '12px',
     padding: '20px',
-    maxWidth: '850px',
+    maxWidth: '900px',
     margin: '0 auto 28px auto',
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     border: '1px solid #e2e8f0'
   },
+  shipIconHeader: {
+    fontSize: '32px',
+    lineHeight: 1
+  },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '14px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
     marginBottom: '16px'
   },
   label: {
     display: 'block',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: 'bold',
     color: '#334155',
     marginBottom: '6px'
@@ -213,7 +267,7 @@ const styles = {
     fontSize: '13px'
   },
   printBtn: {
-    background: '#b91c1c',
+    background: '#881337',
     color: '#fff',
     border: 'none',
     padding: '12px 20px',
@@ -225,7 +279,7 @@ const styles = {
   },
   labelsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 420px))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 430px))',
     gap: '16px',
     justifyContent: 'center'
   },
@@ -239,60 +293,91 @@ const styles = {
     pageBreakInside: 'avoid'
   },
   labelInnerBorder: {
-    border: '1.5px solid #eab308',
+    border: '1.5px solid #ca8a04',
     borderRadius: '12px',
-    padding: '10px'
+    padding: '8px'
   },
   labelHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: '6px',
-    marginBottom: '6px'
+    paddingBottom: '4px',
+    marginBottom: '4px',
+    borderBottom: '1px solid #f1f5f9'
   },
-  logoBox: {
-    flex: 1,
+  iconBox: {
+    flex: 0.8,
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center'
   },
-  logoImg: {
-    maxHeight: '44px',
-    maxWidth: '120px',
-    objectFit: 'contain'
+  oceanTag: {
+    fontSize: '7px',
+    fontWeight: '900',
+    color: '#881337',
+    letterSpacing: '1px',
+    marginTop: '2px'
   },
   dividerVertical: {
     width: '1.5px',
-    height: '42px',
+    height: '46px',
     background: '#881337',
     margin: '0 10px'
   },
   headerTitleBox: {
-    flex: 1.3,
+    flex: 2,
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center'
   },
   chineseTitle: {
-    fontSize: '16px',
+    fontSize: '22px',
     fontWeight: '900',
     color: '#881337',
-    letterSpacing: '3px',
+    letterSpacing: '2px',
     lineHeight: '1.1'
   },
-  companySubTitle: {
-    fontSize: '11px',
-    fontWeight: '900',
-    color: '#881337',
-    letterSpacing: '0.5px',
-    marginTop: '1px'
+  markCode: {
+    color: '#0f172a',
+    fontWeight: '900'
   },
-  trackingHeader: {
+  subShippingMark: {
+    fontSize: '8px',
+    fontWeight: 'bold',
+    color: '#64748b',
+    letterSpacing: '0.5px',
+    marginTop: '2px'
+  },
+  dataMetaRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1.1fr 1fr',
+    gap: '6px',
+    backgroundColor: '#f8fafc',
+    padding: '4px 6px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0',
+    marginBottom: '6px'
+  },
+  metaItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap'
+  },
+  metaLabel: {
+    fontSize: '8px',
+    fontWeight: '900',
+    color: '#881337'
+  },
+  metaValue: {
     fontSize: '9px',
     fontWeight: 'bold',
-    color: '#475569',
-    marginTop: '2px'
+    color: '#0f172a',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden'
   },
   labelBody: {
     display: 'flex',
@@ -302,27 +387,27 @@ const styles = {
     flex: 1,
     border: '1.5px solid #881337',
     borderRadius: '8px',
-    padding: '5px 4px',
+    padding: '4px',
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: '100px',
+    minHeight: '94px',
     boxSizing: 'border-box'
   },
   badgeHeader: {
-    fontSize: '8px',
+    fontSize: '7.5px',
     fontWeight: 'bold',
     color: '#881337',
     textTransform: 'uppercase',
     borderBottom: '1px solid #f1f5f9',
     width: '100%',
-    paddingBottom: '3px',
-    marginBottom: '3px'
+    paddingBottom: '2px',
+    marginBottom: '2px'
   },
   cartonNumber: {
-    fontSize: '18px',
+    fontSize: '17px',
     fontWeight: '900',
     color: '#0f172a',
     margin: 'auto 0'
@@ -334,7 +419,7 @@ const styles = {
     margin: 'auto 0'
   },
   customerIdText: {
-    fontSize: '9px',
+    fontSize: '8.5px',
     fontWeight: 'bold',
     color: '#0f172a',
     marginBottom: '2px'
