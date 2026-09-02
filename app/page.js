@@ -207,7 +207,6 @@ export default function LabelGenerator() {
                         <div style={styles.chineseTitlePartner}>
                           船標 <span style={styles.markCode}>{shippingMarkCode || '---'}</span>
                         </div>
-                        <div style={styles.subShippingMark}>SHIPPING MARK / MARCA DE EMBARQUE</div>
                       </div>
                     </div>
 
