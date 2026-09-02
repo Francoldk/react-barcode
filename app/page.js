@@ -5,17 +5,21 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
+  // Selector de Tipo de Etiqueta: 'dcam' o 'partner'
+  const [labelType, setLabelType] = useState('dcam');
+
+  // Datos comunes y específicos
   const [shippingMarkCode, setShippingMarkCode] = useState('836');
   const [clientName, setClientName] = useState('');
-  const [customerId, setCustomerId] = useState('');
+  const [trackingId, setTrackingId] = useState('');
   const [productDesc, setProductDesc] = useState('');
   const [totalCartons, setTotalCartons] = useState('');
 
-  // Formatear identificador para asegurar sufijo -ARG
-  const formattedId = customerId.trim()
-    ? customerId.trim().toUpperCase().endsWith('-ARG')
-      ? customerId.trim().toUpperCase()
-      : `${customerId.trim().toUpperCase()}-ARG`
+  // Formatear ID con sufijo -ARG
+  const formattedId = trackingId.trim()
+    ? trackingId.trim().toUpperCase().endsWith('-ARG')
+      ? trackingId.trim().toUpperCase()
+      : `${trackingId.trim().toUpperCase()}-ARG`
     : '';
 
   const parsedTotal = Math.max(1, parseInt(totalCartons, 10) || 1);
@@ -23,63 +27,96 @@ export default function LabelGenerator() {
 
   return (
     <div style={styles.container}>
-      {/* PANEL DE CONTROL (Oculto al imprimir) */}
+      {/* PANEL DE CONTROL */}
       <div style={styles.controlPanel} className="no-print">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div style={styles.shipIconHeader}>🚢</div>
-          <div>
-            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Generador Universal de Shipping Marks</h2>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>Etiquetas neutras para consolidación marítima y contenedores</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {labelType === 'dcam' ? (
+              <img src="/logo.png" alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />
+            ) : (
+              <span style={{ fontSize: '28px' }}>🚢</span>
+            )}
+            <div>
+              <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>
+                {labelType === 'dcam' ? 'Etiquetas Oficiales DCAM' : 'Etiquetas Partner / Alquiler Contenedor'}
+              </h2>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
+                {labelType === 'dcam' ? 'Formato con identidad corporativa completa' : 'Marca blanca neutral (Ocean Freight / 船標)'}
+              </p>
+            </div>
+          </div>
+
+          {/* Selector de modo */}
+          <div style={styles.toggleContainer}>
+            <button
+              type="button"
+              style={labelType === 'dcam' ? styles.toggleBtnActive : styles.toggleBtn}
+              onClick={() => setLabelType('dcam')}
+            >
+              🏷️ Oficial DCAM
+            </button>
+            <button
+              type="button"
+              style={labelType === 'partner' ? styles.toggleBtnActive : styles.toggleBtn}
+              onClick={() => setLabelType('partner')}
+            >
+              🚢 Partner / Neutral
+            </button>
           </div>
         </div>
 
+        {/* Formulario Dinámico */}
         <div style={styles.gridInputs}>
-          <div>
-            <label style={styles.label}>Código Shipping Mark (船標):</label>
-            <input
-              style={styles.input}
-              type="text"
-              value={shippingMarkCode}
-              onChange={(e) => setShippingMarkCode(e.target.value)}
-              placeholder="Ej: 836"
-            />
-          </div>
+          {labelType === 'partner' && (
+            <div>
+              <label style={styles.label}>Código Shipping Mark (船標):</label>
+              <input
+                style={styles.input}
+                type="text"
+                value={shippingMarkCode}
+                onChange={(e) => setShippingMarkCode(e.target.value)}
+                placeholder="Ej: 836"
+              />
+            </div>
+          )}
 
           <div>
-            <label style={styles.label}>Nombre / Vendedor / Cliente:</label>
+            <label style={styles.label}>Nombre Cliente / Vendedor:</label>
             <input
               style={styles.input}
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="Ej: Global Imports"
+              placeholder="Ej: Juan Pérez / Global Trading"
             />
           </div>
 
           <div>
-            <label style={styles.label}>ID / Tracking:</label>
+            <label style={styles.label}>Customer ID / Tracking:</label>
             <input
               style={styles.input}
               type="text"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              placeholder="Ej: DC-80021 (agrega -ARG)"
+              value={trackingId}
+              onChange={(e) => setTrackingId(e.target.value)}
+              placeholder="Ej: A-1-800214147374 (agrega -ARG)"
             />
           </div>
 
-          <div>
-            <label style={styles.label}>Producto / Mercadería:</label>
-            <input
-              style={styles.input}
-              type="text"
-              value={productDesc}
-              onChange={(e) => setProductDesc(e.target.value)}
-              placeholder="Ej: Auto Parts / Repuestos"
-            />
-          </div>
+          {labelType === 'partner' && (
+            <div>
+              <label style={styles.label}>Producto / Mercadería:</label>
+              <input
+                style={styles.input}
+                type="text"
+                value={productDesc}
+                onChange={(e) => setProductDesc(e.target.value)}
+                placeholder="Ej: Auto Parts / Repuestos"
+              />
+            </div>
+          )}
 
           <div>
-            <label style={styles.label}>Cantidad de Bultos / Cajas:</label>
+            <label style={styles.label}>Total de Cajas / Bultos:</label>
             <input
               style={styles.input}
               type="number"
@@ -87,7 +124,7 @@ export default function LabelGenerator() {
               max="500"
               value={totalCartons}
               onChange={(e) => setTotalCartons(e.target.value)}
-              placeholder="Ej: 10"
+              placeholder="Ej: 5"
             />
           </div>
         </div>
@@ -102,65 +139,97 @@ export default function LabelGenerator() {
         {cartons.map((num) => {
           const cartonSuffix = String(num).padStart(3, '0');
           const totalSuffix = String(parsedTotal).padStart(3, '0');
+          
           const uniqueBarcodeValue = formattedId
             ? `${formattedId}-${cartonSuffix}-${totalSuffix}`
-            : `SHIP-${shippingMarkCode}-${cartonSuffix}-${totalSuffix}`;
+            : labelType === 'dcam'
+              ? `DCAM-${cartonSuffix}-${totalSuffix}`
+              : `SHIP-${shippingMarkCode}-${cartonSuffix}-${totalSuffix}`;
 
-          // Contenido técnico del QR sin marcas comerciales
-          const qrTextData = [
-            `SHIPPING MARK: 船標 ${shippingMarkCode || 'N/A'}`,
-            `NAME / VENDOR: ${clientName || 'N/A'}`,
-            `CARGO ID: ${formattedId || 'N/A'}`,
-            `PRODUCT: ${productDesc || 'GENERAL CARGO'}`,
-            `CARTON: ${num} / ${parsedTotal}`
-          ].join('\n');
+          // Contenido del QR según la variante
+          const qrTextData = labelType === 'dcam'
+            ? [
+                '📦 DE CHINA AL MUNDO',
+                'Control de Carga / Cargo Control',
+                `Guía/Tracking: #DCAM ${formattedId || 'N/A'}`,
+                `Cliente/Client: ${clientName || 'N/A'}`,
+                `Bultos/Cartons: ${num} / ${parsedTotal}`
+              ].join('\n')
+            : [
+                `SHIPPING MARK: 船標 ${shippingMarkCode || 'N/A'}`,
+                `NAME: ${clientName || 'N/A'}`,
+                `CARGO ID: ${formattedId || 'N/A'}`,
+                `PRODUCT: ${productDesc || 'GENERAL CARGO'}`,
+                `CARTON: ${num} / ${parsedTotal}`
+              ].join('\n');
 
           return (
             <div key={num} style={styles.labelCard}>
               <div style={styles.labelInnerBorder}>
                 
-                {/* 1. ENCABEZADO NEUTRAL MARÍTIMO */}
-                <div style={styles.labelHeader}>
-                  <div style={styles.iconBox}>
-                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#881337" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      {/* Barco portacontenedores técnico */}
-                      <path d="M2 19c2 1 4 1 6 0 2-1 4-1 6 0 2 1 4 1 6 0" />
-                      <path d="M3 15l2-6h14l2 6H3z" />
-                      <path d="M6 9V5h12v4" />
-                      <line x1="10" y1="5" x2="10" y2="9" />
-                      <line x1="14" y1="5" x2="14" y2="9" />
-                      <circle cx="12" cy="12" r="1" fill="#881337" />
-                    </svg>
-                    <span style={styles.oceanTag}>OCEAN FREIGHT</span>
-                  </div>
-
-                  <div style={styles.dividerVertical}></div>
-
-                  <div style={styles.headerTitleBox}>
-                    <div style={styles.chineseTitle}>
-                      船標 <span style={styles.markCode}>{shippingMarkCode || '---'}</span>
+                {/* 1. ENCABEZADOS SEGÚN EL MODO */}
+                {labelType === 'dcam' ? (
+                  // Encabezado Oficial DCAM
+                  <div style={styles.labelHeaderDcam}>
+                    <div style={styles.logoBox}>
+                      <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
                     </div>
-                    <div style={styles.subShippingMark}>SHIPPING MARK / MARCA DE EMBARQUE</div>
-                  </div>
-                </div>
 
-                {/* FILA DE DATOS ESPECÍFICOS: NOMBRE / ID / PRODUCTO */}
-                <div style={styles.dataMetaRow}>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>NAME:</span>
-                    <span style={styles.metaValue}>{clientName || '---'}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>ID:</span>
-                    <span style={styles.metaValue}>{formattedId || '---'}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>PROD:</span>
-                    <span style={styles.metaValue}>{productDesc || 'GENERAL CARGO'}</span>
-                  </div>
-                </div>
+                    <div style={styles.dividerVertical}></div>
 
-                {/* 2. CUERPO: CARTON NO, QR Y CÓDIGO DE BARRAS */}
+                    <div style={styles.headerTitleBox}>
+                      <div style={styles.chineseTitle}>船標</div>
+                      <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
+                      {formattedId && (
+                        <div style={styles.trackingHeader}>TRACK: {formattedId}</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  // Encabezado Neutral Partner
+                  <>
+                    <div style={styles.labelHeaderPartner}>
+                      <div style={styles.iconBox}>
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#881337" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 19c2 1 4 1 6 0 2-1 4-1 6 0 2 1 4 1 6 0" />
+                          <path d="M3 15l2-6h14l2 6H3z" />
+                          <path d="M6 9V5h12v4" />
+                          <line x1="10" y1="5" x2="10" y2="9" />
+                          <line x1="14" y1="5" x2="14" y2="9" />
+                          <circle cx="12" cy="12" r="1" fill="#881337" />
+                        </svg>
+                        <span style={styles.oceanTag}>OCEAN FREIGHT</span>
+                      </div>
+
+                      <div style={styles.dividerVertical}></div>
+
+                      <div style={styles.headerTitleBox}>
+                        <div style={styles.chineseTitlePartner}>
+                          船標 <span style={styles.markCode}>{shippingMarkCode || '---'}</span>
+                        </div>
+                        <div style={styles.subShippingMark}>SHIPPING MARK / MARCA DE EMBARQUE</div>
+                      </div>
+                    </div>
+
+                    {/* Fila técnica Partner */}
+                    <div style={styles.dataMetaRow}>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>NAME:</span>
+                        <span style={styles.metaValue}>{clientName || '---'}</span>
+                      </div>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>ID:</span>
+                        <span style={styles.metaValue}>{formattedId || '---'}</span>
+                      </div>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>PROD:</span>
+                        <span style={styles.metaValue}>{productDesc || 'GENERAL CARGO'}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 2. CUERPO DE 3 SECCIONES */}
                 <div style={styles.labelBody}>
                   {/* COLUMNA 1: CARTON NO */}
                   <div style={styles.sectionCol}>
@@ -178,15 +247,19 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 3: BARCODE ID */}
+                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
-                    <div style={styles.badgeHeader}>• CARGO TRACK ID</div>
-                    <div style={styles.customerIdText}>{formattedId || `SHIP-${shippingMarkCode}`}</div>
+                    <div style={styles.badgeHeader}>
+                      {labelType === 'dcam' ? '• CUSTOMER ID' : '• CARGO TRACK ID'}
+                    </div>
+                    <div style={styles.customerIdText}>
+                      {formattedId || (labelType === 'dcam' ? 'SIN ASIGNAR' : `SHIP-${shippingMarkCode}`)}
+                    </div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
                         value={uniqueBarcodeValue}
                         width={0.75}
-                        height={22}
+                        height={24}
                         fontSize={6}
                         margin={0}
                         displayValue={true}
@@ -201,7 +274,6 @@ export default function LabelGenerator() {
         })}
       </div>
 
-      {/* ESTILOS DE IMPRESIÓN */}
       <style jsx global>{`
         @media print {
           body {
@@ -241,13 +313,38 @@ const styles = {
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     border: '1px solid #e2e8f0'
   },
-  shipIconHeader: {
-    fontSize: '32px',
-    lineHeight: 1
+  toggleContainer: {
+    display: 'flex',
+    gap: '6px',
+    background: '#f1f5f9',
+    padding: '4px',
+    borderRadius: '8px',
+    border: '1px solid #cbd5e1'
+  },
+  toggleBtn: {
+    background: 'transparent',
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#64748b',
+    cursor: 'pointer'
+  },
+  toggleBtnActive: {
+    background: '#881337',
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#ffffff',
+    cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
     gap: '12px',
     marginBottom: '16px'
   },
@@ -297,13 +394,31 @@ const styles = {
     borderRadius: '12px',
     padding: '8px'
   },
-  labelHeader: {
+  labelHeaderDcam: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '6px',
+    marginBottom: '6px'
+  },
+  labelHeaderPartner: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: '4px',
     marginBottom: '4px',
     borderBottom: '1px solid #f1f5f9'
+  },
+  logoBox: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  logoImg: {
+    maxHeight: '44px',
+    maxWidth: '120px',
+    objectFit: 'contain'
   },
   iconBox: {
     flex: 0.8,
@@ -321,23 +436,37 @@ const styles = {
   },
   dividerVertical: {
     width: '1.5px',
-    height: '46px',
+    height: '42px',
     background: '#881337',
     margin: '0 10px'
   },
   headerTitleBox: {
-    flex: 2,
+    flex: 1.5,
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center'
   },
   chineseTitle: {
-    fontSize: '22px',
+    fontSize: '16px',
+    fontWeight: '900',
+    color: '#881337',
+    letterSpacing: '3px',
+    lineHeight: '1.1'
+  },
+  chineseTitlePartner: {
+    fontSize: '20px',
     fontWeight: '900',
     color: '#881337',
     letterSpacing: '2px',
     lineHeight: '1.1'
+  },
+  companySubTitle: {
+    fontSize: '11px',
+    fontWeight: '900',
+    color: '#881337',
+    letterSpacing: '0.5px',
+    marginTop: '1px'
   },
   markCode: {
     color: '#0f172a',
@@ -348,6 +477,12 @@ const styles = {
     fontWeight: 'bold',
     color: '#64748b',
     letterSpacing: '0.5px',
+    marginTop: '2px'
+  },
+  trackingHeader: {
+    fontSize: '9px',
+    fontWeight: 'bold',
+    color: '#475569',
     marginTop: '2px'
   },
   dataMetaRow: {
@@ -407,7 +542,7 @@ const styles = {
     marginBottom: '2px'
   },
   cartonNumber: {
-    fontSize: '17px',
+    fontSize: '18px',
     fontWeight: '900',
     color: '#0f172a',
     margin: 'auto 0'
