@@ -5,17 +5,18 @@ import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
 export default function LabelGenerator() {
-  // Selector de Tipo de Etiqueta: 'dcam' o 'partner'
-  const [labelType, setLabelType] = useState('dcam');
+  // Selector de Tipo de Etiqueta: 'maritimo_dcam' | 'aereo_dcam' | 'partner'
+  const [labelType, setLabelType] = useState('maritimo_dcam');
 
-  // Datos comunes y específicos
-  const [shippingMarkCode, setShippingMarkCode] = useState('836');
+  // Campos de formulario
+  const [shippingMarkCode, setShippingMarkCode] = useState('');
   const [clientName, setClientName] = useState('');
   const [trackingId, setTrackingId] = useState('');
   const [productDesc, setProductDesc] = useState('');
+  const [weightKg, setWeightKg] = useState('');
   const [totalCartons, setTotalCartons] = useState('');
 
-  // Formatear ID con sufijo -ARG
+  // Formatear ID asegurando el sufijo -ARG
   const formattedId = trackingId.trim()
     ? trackingId.trim().toUpperCase().endsWith('-ARG')
       ? trackingId.trim().toUpperCase()
@@ -27,55 +28,66 @@ export default function LabelGenerator() {
 
   return (
     <div style={styles.container}>
-      {/* PANEL DE CONTROL */}
+      {/* PANEL DE CONTROL (Oculto al imprimir) */}
       <div style={styles.controlPanel} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {labelType === 'dcam' ? (
-              <img src="/logo.png" alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />
-            ) : (
+            {labelType === 'partner' ? (
               <span style={{ fontSize: '28px' }}>🚢</span>
+            ) : (
+              <img src="/logo.png" alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />
             )}
             <div>
               <h2 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>
-                {labelType === 'dcam' ? 'Etiquetas Oficiales DCAM' : 'Etiquetas Partner / Alquiler Contenedor'}
+                {labelType === 'maritimo_dcam' && 'Etiqueta Marítima Oficial DCAM'}
+                {labelType === 'aereo_dcam' && 'Etiqueta Aérea Oficial DCAM (唛头)'}
+                {labelType === 'partner' && 'Etiqueta Partner / Alquiler Contenedor'}
               </h2>
               <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                {labelType === 'dcam' ? 'Formato con identidad corporativa completa' : 'Marca blanca neutral (Ocean Freight / 船標)'}
+                {labelType === 'maritimo_dcam' && 'Formato marítimo con identidad De China al Mundo (船標)'}
+                {labelType === 'aereo_dcam' && 'Formato aéreo oficial con control de peso y producto (唛头)'}
+                {labelType === 'partner' && 'Marca blanca neutral con código fijo de bodega (船標 836)'}
               </p>
             </div>
           </div>
 
-          {/* Selector de modo */}
+          {/* Selector de 3 Modos */}
           <div style={styles.toggleContainer}>
             <button
               type="button"
-              style={labelType === 'dcam' ? styles.toggleBtnActive : styles.toggleBtn}
-              onClick={() => setLabelType('dcam')}
+              style={labelType === 'maritimo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
+              onClick={() => setLabelType('maritimo_dcam')}
             >
-              🏷️ Oficial DCAM
+              🚢 Marítimo DCAM
+            </button>
+            <button
+              type="button"
+              style={labelType === 'aereo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
+              onClick={() => setLabelType('aereo_dcam')}
+            >
+              ✈️ Aéreo DCAM
             </button>
             <button
               type="button"
               style={labelType === 'partner' ? styles.toggleBtnActive : styles.toggleBtn}
               onClick={() => setLabelType('partner')}
             >
-              🚢 Partner / Neutral
+              🤝 Partner Neutral
             </button>
           </div>
         </div>
 
-        {/* Formulario Dinámico */}
+        {/* Inputs del formulario */}
         <div style={styles.gridInputs}>
           {labelType === 'partner' && (
             <div>
-              <label style={styles.label}>Código Shipping Mark (船標):</label>
+              <label style={styles.label}>Sufijo Shipping Mark (船標 836 - ...):</label>
               <input
                 style={styles.input}
                 type="text"
                 value={shippingMarkCode}
                 onChange={(e) => setShippingMarkCode(e.target.value)}
-                placeholder="Ej: 836"
+                placeholder="Ej: B01 o CONT-2"
               />
             </div>
           )}
@@ -87,7 +99,7 @@ export default function LabelGenerator() {
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="Ej: Juan Pérez / Global Trading"
+              placeholder="Ej: Juan Pérez"
             />
           </div>
 
@@ -102,7 +114,7 @@ export default function LabelGenerator() {
             />
           </div>
 
-          {labelType === 'partner' && (
+          {(labelType === 'aereo_dcam' || labelType === 'partner') && (
             <div>
               <label style={styles.label}>Producto / Mercadería:</label>
               <input
@@ -110,13 +122,26 @@ export default function LabelGenerator() {
                 type="text"
                 value={productDesc}
                 onChange={(e) => setProductDesc(e.target.value)}
-                placeholder="Ej: Auto Parts / Repuestos"
+                placeholder="Ej: Baterías / Repuestos"
+              />
+            </div>
+          )}
+
+          {labelType === 'aereo_dcam' && (
+            <div>
+              <label style={styles.label}>Peso por Bulto o Total (Kg):</label>
+              <input
+                style={styles.input}
+                type="text"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="Ej: 15.5 kg"
               />
             </div>
           )}
 
           <div>
-            <label style={styles.label}>Total de Cajas / Bultos:</label>
+            <label style={styles.label}>Cantidad de Bultos / Cajas:</label>
             <input
               style={styles.input}
               type="number"
@@ -142,51 +167,96 @@ export default function LabelGenerator() {
           
           const uniqueBarcodeValue = formattedId
             ? `${formattedId}-${cartonSuffix}-${totalSuffix}`
-            : labelType === 'dcam'
-              ? `DCAM-${cartonSuffix}-${totalSuffix}`
-              : `SHIP-${shippingMarkCode}-${cartonSuffix}-${totalSuffix}`;
+            : labelType === 'partner'
+              ? `SHIP-836-${shippingMarkCode || 'X'}-${cartonSuffix}-${totalSuffix}`
+              : `DCAM-${cartonSuffix}-${totalSuffix}`;
 
-          // Contenido del QR según la variante
-          const qrTextData = labelType === 'dcam'
-            ? [
-                '📦 DE CHINA AL MUNDO',
-                'Control de Carga / Cargo Control',
-                `Guía/Tracking: #DCAM ${formattedId || 'N/A'}`,
-                `Cliente/Client: ${clientName || 'N/A'}`,
-                `Bultos/Cartons: ${num} / ${parsedTotal}`
-              ].join('\n')
-            : [
-                `SHIPPING MARK: 船標 ${shippingMarkCode || 'N/A'}`,
-                `NAME: ${clientName || 'N/A'}`,
-                `CARGO ID: ${formattedId || 'N/A'}`,
-                `PRODUCT: ${productDesc || 'GENERAL CARGO'}`,
-                `CARTON: ${num} / ${parsedTotal}`
-              ].join('\n');
+          // Contenido del QR según el modo seleccionado
+          let qrTextData = '';
+          if (labelType === 'maritimo_dcam') {
+            qrTextData = [
+              '📦 DE CHINA AL MUNDO (MARÍTIMO)',
+              'Control de Carga / Cargo Control',
+              `Guía/Tracking: #DCAM ${formattedId || 'N/A'}`,
+              `Cliente/Client: ${clientName || 'N/A'}`,
+              `Bultos/Cartons: ${num} / ${parsedTotal}`
+            ].join('\n');
+          } else if (labelType === 'aereo_dcam') {
+            qrTextData = [
+              '✈️ DE CHINA AL MUNDO (AÉREO)',
+              '唛头 / AIR CARGO SHIPPING MARK',
+              `Tracking ID: ${formattedId || 'N/A'}`,
+              `Cliente/Client: ${clientName || 'N/A'}`,
+              `Producto/Product: ${productDesc || 'GENERAL CARGO'}`,
+              `Peso/Weight: ${weightKg ? `${weightKg} KG` : 'N/A'}`,
+              `Bultos/Cartons: ${num} / ${parsedTotal}`
+            ].join('\n');
+          } else {
+            qrTextData = [
+              `SHIPPING MARK: 船標 836 ${shippingMarkCode ? `- ${shippingMarkCode}` : ''}`,
+              `NAME: ${clientName || 'N/A'}`,
+              `CARGO ID: ${formattedId || 'N/A'}`,
+              `PRODUCT: ${productDesc || 'GENERAL CARGO'}`,
+              `CARTON: ${num} / ${parsedTotal}`
+            ].join('\n');
+          }
 
           return (
             <div key={num} style={styles.labelCard}>
               <div style={styles.labelInnerBorder}>
-                
-                {/* 1. ENCABEZADOS SEGÚN EL MODO */}
-                {labelType === 'dcam' ? (
-                  // Encabezado Oficial DCAM
+
+                {/* --- MODO 1: MARÍTIMO DCAM --- */}
+                {labelType === 'maritimo_dcam' && (
                   <div style={styles.labelHeaderDcam}>
                     <div style={styles.logoBox}>
                       <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
                     </div>
-
                     <div style={styles.dividerVertical}></div>
-
                     <div style={styles.headerTitleBox}>
                       <div style={styles.chineseTitle}>船標</div>
                       <div style={styles.companySubTitle}>DE CHINA AL MUNDO</div>
-                      {formattedId && (
-                        <div style={styles.trackingHeader}>TRACK: {formattedId}</div>
-                      )}
+                      {formattedId && <div style={styles.trackingHeader}>TRACK: {formattedId}</div>}
                     </div>
                   </div>
-                ) : (
-                  // Encabezado Neutral Partner
+                )}
+
+                {/* --- MODO 2: AÉREO DCAM (唛头) --- */}
+                {labelType === 'aereo_dcam' && (
+                  <>
+                    <div style={styles.labelHeaderAereo}>
+                      <div style={styles.logoBox}>
+                        <img src="/logo.png" alt="De China Al Mundo" style={styles.logoImg} />
+                      </div>
+                      <div style={styles.dividerVertical}></div>
+                      <div style={styles.headerTitleBox}>
+                        <div style={styles.chineseTitleAereo}>
+                          唛头：<span style={{ color: '#881337' }}>DE CHINA AL MUNDO</span>
+                        </div>
+                        <div style={styles.airTag}>AIR CARGO / SERVICIO AÉREO</div>
+                        {formattedId && <div style={styles.trackingHeader}>TRACK: {formattedId}</div>}
+                      </div>
+                    </div>
+
+                    {/* Fila técnica Aérea: Producto y Kg */}
+                    <div style={styles.dataMetaRow}>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>PROD:</span>
+                        <span style={styles.metaValue}>{productDesc || 'GENERAL CARGO'}</span>
+                      </div>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>PESO:</span>
+                        <span style={styles.metaValue}>{weightKg ? `${weightKg} KG` : '---'}</span>
+                      </div>
+                      <div style={styles.metaItem}>
+                        <span style={styles.metaLabel}>CLI:</span>
+                        <span style={styles.metaValue}>{clientName || '---'}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* --- MODO 3: PARTNER NEUTRAL (船標 836 -) --- */}
+                {labelType === 'partner' && (
                   <>
                     <div style={styles.labelHeaderPartner}>
                       <div style={styles.iconBox}>
@@ -200,17 +270,14 @@ export default function LabelGenerator() {
                         </svg>
                         <span style={styles.oceanTag}>OCEAN FREIGHT</span>
                       </div>
-
                       <div style={styles.dividerVertical}></div>
-
                       <div style={styles.headerTitleBox}>
                         <div style={styles.chineseTitlePartner}>
-  船標 836 - <span style={styles.markCode}>{shippingMarkCode || '---'}</span>
-</div>
+                          船標 836 {shippingMarkCode ? `- ${shippingMarkCode}` : ''}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Fila técnica Partner */}
                     <div style={styles.dataMetaRow}>
                       <div style={styles.metaItem}>
                         <span style={styles.metaLabel}>NAME:</span>
@@ -228,7 +295,7 @@ export default function LabelGenerator() {
                   </>
                 )}
 
-                {/* 2. CUERPO DE 3 SECCIONES */}
+                {/* 2. CUERPO DE 3 SECCIONES (Carton No, QR y Barcode) */}
                 <div style={styles.labelBody}>
                   {/* COLUMNA 1: CARTON NO */}
                   <div style={styles.sectionCol}>
@@ -249,10 +316,10 @@ export default function LabelGenerator() {
                   {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
                   <div style={{ ...styles.sectionCol, flex: 1.45 }}>
                     <div style={styles.badgeHeader}>
-                      {labelType === 'dcam' ? '• CUSTOMER ID' : '• CARGO TRACK ID'}
+                      {labelType === 'partner' ? '• CARGO TRACK ID' : '• CUSTOMER ID'}
                     </div>
                     <div style={styles.customerIdText}>
-                      {formattedId || (labelType === 'dcam' ? 'SIN ASIGNAR' : `SHIP-${shippingMarkCode}`)}
+                      {formattedId || (labelType === 'partner' ? 'SHIP-836' : 'SIN ASIGNAR')}
                     </div>
                     <div style={styles.barcodeWrapper}>
                       <Barcode
@@ -307,7 +374,7 @@ const styles = {
     background: '#ffffff',
     borderRadius: '12px',
     padding: '20px',
-    maxWidth: '900px',
+    maxWidth: '950px',
     margin: '0 auto 28px auto',
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     border: '1px solid #e2e8f0'
@@ -323,9 +390,9 @@ const styles = {
   toggleBtn: {
     background: 'transparent',
     border: 'none',
-    padding: '8px 14px',
+    padding: '8px 12px',
     borderRadius: '6px',
-    fontSize: '12px',
+    fontSize: '11.5px',
     fontWeight: 'bold',
     color: '#64748b',
     cursor: 'pointer'
@@ -333,9 +400,9 @@ const styles = {
   toggleBtnActive: {
     background: '#881337',
     border: 'none',
-    padding: '8px 14px',
+    padding: '8px 12px',
     borderRadius: '6px',
-    fontSize: '12px',
+    fontSize: '11.5px',
     fontWeight: 'bold',
     color: '#ffffff',
     cursor: 'pointer',
@@ -343,7 +410,7 @@ const styles = {
   },
   gridInputs: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
     gap: '12px',
     marginBottom: '16px'
   },
@@ -400,6 +467,13 @@ const styles = {
     paddingBottom: '6px',
     marginBottom: '6px'
   },
+  labelHeaderAereo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '4px',
+    marginBottom: '4px'
+  },
   labelHeaderPartner: {
     display: 'flex',
     alignItems: 'center',
@@ -433,6 +507,13 @@ const styles = {
     letterSpacing: '1px',
     marginTop: '2px'
   },
+  airTag: {
+    fontSize: '7.5px',
+    fontWeight: 'bold',
+    color: '#64748b',
+    letterSpacing: '0.5px',
+    marginTop: '1px'
+  },
   dividerVertical: {
     width: '1.5px',
     height: '42px',
@@ -453,6 +534,13 @@ const styles = {
     letterSpacing: '3px',
     lineHeight: '1.1'
   },
+  chineseTitleAereo: {
+    fontSize: '13px',
+    fontWeight: '900',
+    color: '#0f172a',
+    letterSpacing: '0.5px',
+    lineHeight: '1.2'
+  },
   chineseTitlePartner: {
     fontSize: '20px',
     fontWeight: '900',
@@ -467,17 +555,6 @@ const styles = {
     letterSpacing: '0.5px',
     marginTop: '1px'
   },
-  markCode: {
-    color: '#0f172a',
-    fontWeight: '900'
-  },
-  subShippingMark: {
-    fontSize: '8px',
-    fontWeight: 'bold',
-    color: '#64748b',
-    letterSpacing: '0.5px',
-    marginTop: '2px'
-  },
   trackingHeader: {
     fontSize: '9px',
     fontWeight: 'bold',
@@ -486,7 +563,7 @@ const styles = {
   },
   dataMetaRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1.1fr 1fr',
+    gridTemplateColumns: '1.2fr 0.8fr 1fr',
     gap: '6px',
     backgroundColor: '#f8fafc',
     padding: '4px 6px',
