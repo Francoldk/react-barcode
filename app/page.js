@@ -4,11 +4,23 @@ import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import Barcode from 'react-barcode';
 
-export default function LabelGenerator() {
-  // Selector de Tipo de Etiqueta: 'maritimo_dcam' | 'aereo_dcam' | 'partner'
-  const [labelType, setLabelType] = useState('maritimo_dcam');
+// --- BASE DE DATOS LOCAL DE USUARIOS ---
+// Podés cambiar los PINs y los Nombres libremente acá
+const USERS_DB = {
+  '1234': { role: 'maestro', name: 'MAESTRO' },
+  '836':  { role: 'operador', name: 'BODEGA 836' },
+  '1111': { role: 'operador', name: 'OPERADOR 1' },
+  '2222': { role: 'operador', name: 'OPERADOR 2' },
+  '3333': { role: 'operador', name: 'OPERADOR 3' },
+  '4444': { role: 'operador', name: 'OPERADOR 4' },
+  '5555': { role: 'operador', name: 'OPERADOR 5' }
+};
 
-  // Campos de formulario
+export default function LabelGenerator() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [pin, setPin] = useState('');
+
+  const [labelType, setLabelType] = useState('maritimo_dcam');
   const [shippingMarkCode, setShippingMarkCode] = useState('');
   const [clientName, setClientName] = useState('');
   const [trackingId, setTrackingId] = useState('');
@@ -16,7 +28,6 @@ export default function LabelGenerator() {
   const [weightKg, setWeightKg] = useState('');
   const [totalCartons, setTotalCartons] = useState('');
 
-  // Formatear ID asegurando el sufijo -ARG
   const formattedId = trackingId.trim()
     ? trackingId.trim().toUpperCase().endsWith('-ARG')
       ? trackingId.trim().toUpperCase()
@@ -26,9 +37,53 @@ export default function LabelGenerator() {
   const parsedTotal = Math.max(1, parseInt(totalCartons, 10) || 1);
   const cartons = Array.from({ length: parsedTotal }, (_, i) => i + 1);
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const user = USERS_DB[pin];
+    
+    if (user) {
+      setCurrentUser(user);
+      if (user.role === 'maestro') {
+        setLabelType('maritimo_dcam');
+      } else {
+        setLabelType('partner'); // Fuerza a los operadores al modo Partner
+      }
+    } else {
+      alert('PIN incorrecto. Intente nuevamente.');
+      setPin('');
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setPin('');
+  };
+
+  // --- PANTALLA DE LOGIN ---
+  if (!currentUser) {
+    return (
+      <div style={styles.loginContainer}>
+        <form onSubmit={handleLogin} style={styles.loginBox}>
+          <img src="/logo.png" alt="DCAM" style={{ height: '60px', marginBottom: '20px', objectFit: 'contain' }} />
+          <h2 style={{ color: '#1e293b', margin: '0 0 8px 0' }}>Sistema de Etiquetas</h2>
+          <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '24px' }}>Ingrese su PIN de acceso para continuar</p>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="****"
+            style={styles.loginInput}
+            autoFocus
+          />
+          <button type="submit" style={styles.loginBtn}>Ingresar</button>
+        </form>
+      </div>
+    );
+  }
+
+  // --- PANTALLA PRINCIPAL DEL GENERADOR ---
   return (
     <div style={styles.container}>
-      {/* PANEL DE CONTROL (Oculto al imprimir) */}
       <div style={styles.controlPanel} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -44,40 +99,45 @@ export default function LabelGenerator() {
                 {labelType === 'partner' && 'Etiqueta Partner / Alquiler Contenedor'}
               </h2>
               <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                {labelType === 'maritimo_dcam' && 'Formato marítimo con identidad De China al Mundo (船標)'}
-                {labelType === 'aereo_dcam' && 'Formato aéreo oficial con control de peso y producto (唛头)'}
-                {labelType === 'partner' && 'Marca blanca neutral con código fijo de bodega (船標 836)'}
+                Usuario: <strong>{currentUser.name.toUpperCase()}</strong>
               </p>
             </div>
           </div>
 
-          {/* Selector de 3 Modos */}
-          <div style={styles.toggleContainer}>
-            <button
-              type="button"
-              style={labelType === 'maritimo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
-              onClick={() => setLabelType('maritimo_dcam')}
-            >
-              🚢 Marítimo DCAM
-            </button>
-            <button
-              type="button"
-              style={labelType === 'aereo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
-              onClick={() => setLabelType('aereo_dcam')}
-            >
-              ✈️ Aéreo DCAM
-            </button>
-            <button
-              type="button"
-              style={labelType === 'partner' ? styles.toggleBtnActive : styles.toggleBtn}
-              onClick={() => setLabelType('partner')}
-            >
-              🤝 Partner Neutral
-            </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {currentUser.role === 'maestro' ? (
+              <div style={styles.toggleContainer}>
+                <button
+                  type="button"
+                  style={labelType === 'maritimo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
+                  onClick={() => setLabelType('maritimo_dcam')}
+                >
+                  🚢 Marítimo DCAM
+                </button>
+                <button
+                  type="button"
+                  style={labelType === 'aereo_dcam' ? styles.toggleBtnActive : styles.toggleBtn}
+                  onClick={() => setLabelType('aereo_dcam')}
+                >
+                  ✈️ Aéreo DCAM
+                </button>
+                <button
+                  type="button"
+                  style={labelType === 'partner' ? styles.toggleBtnActive : styles.toggleBtn}
+                  onClick={() => setLabelType('partner')}
+                >
+                  🤝 Partner Neutral
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#fef2f2', color: '#991b1b', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #f87171' }}>
+                🔒 Restringido: {currentUser.name}
+              </div>
+            )}
+            <button onClick={handleLogout} style={styles.logoutBtn}>Salir</button>
           </div>
         </div>
 
-        {/* Inputs del formulario */}
         <div style={styles.gridInputs}>
           {labelType === 'partner' && (
             <div>
@@ -159,7 +219,6 @@ export default function LabelGenerator() {
         </button>
       </div>
 
-      {/* GRILLA DE ETIQUETAS */}
       <div style={styles.labelsGrid} className="print-area">
         {cartons.map((num) => {
           const cartonSuffix = String(num).padStart(3, '0');
@@ -171,7 +230,6 @@ export default function LabelGenerator() {
               ? `SHIP-836-${shippingMarkCode || 'X'}-${cartonSuffix}-${totalSuffix}`
               : `DCAM-${cartonSuffix}-${totalSuffix}`;
 
-          // Contenido del QR según el modo seleccionado
           let qrTextData = '';
           if (labelType === 'maritimo_dcam') {
             qrTextData = [
@@ -202,10 +260,9 @@ export default function LabelGenerator() {
           }
 
           return (
-            <div key={num} style={styles.labelCard}>
+            <div key={num} style={styles.labelCard} className="thermal-label">
               <div style={styles.labelInnerBorder}>
 
-                {/* --- MODO 1: MARÍTIMO DCAM --- */}
                 {labelType === 'maritimo_dcam' && (
                   <div style={styles.labelHeaderDcam}>
                     <div style={styles.logoBox}>
@@ -220,7 +277,6 @@ export default function LabelGenerator() {
                   </div>
                 )}
 
-                {/* --- MODO 2: AÉREO DCAM (唛头) --- */}
                 {labelType === 'aereo_dcam' && (
                   <>
                     <div style={styles.labelHeaderAereo}>
@@ -237,7 +293,6 @@ export default function LabelGenerator() {
                       </div>
                     </div>
 
-                    {/* Fila técnica Aérea: Producto y Kg */}
                     <div style={styles.dataMetaRow}>
                       <div style={styles.metaItem}>
                         <span style={styles.metaLabel}>PROD:</span>
@@ -255,7 +310,6 @@ export default function LabelGenerator() {
                   </>
                 )}
 
-                {/* --- MODO 3: PARTNER NEUTRAL (船標 836 -) --- */}
                 {labelType === 'partner' && (
                   <>
                     <div style={styles.labelHeaderPartner}>
@@ -295,9 +349,7 @@ export default function LabelGenerator() {
                   </>
                 )}
 
-                {/* 2. CUERPO DE 3 SECCIONES (Carton No, QR y Barcode) */}
                 <div style={styles.labelBody}>
-                  {/* COLUMNA 1: CARTON NO */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• CARTON NO.</div>
                     <div style={styles.cartonNumber}>
@@ -305,7 +357,6 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 2: QR CODE */}
                   <div style={styles.sectionCol}>
                     <div style={styles.badgeHeader}>• QR CODE</div>
                     <div style={styles.qrWrapper}>
@@ -313,8 +364,7 @@ export default function LabelGenerator() {
                     </div>
                   </div>
 
-                  {/* COLUMNA 3: CUSTOMER ID & BARCODE */}
-                  <div style={{ ...styles.sectionCol, flex: 1.45 }}>
+                  <div style={{ ...styles.sectionCol, flex: 1.45, position: 'relative' }}>
                     <div style={styles.badgeHeader}>
                       {labelType === 'partner' ? '• CARGO TRACK ID' : '• CUSTOMER ID'}
                     </div>
@@ -331,6 +381,10 @@ export default function LabelGenerator() {
                         displayValue={true}
                       />
                     </div>
+                    {/* MARCA DE AUDITORÍA VISUAL DINÁMICA */}
+                    <div style={styles.auditWatermark}>
+                      OP: {currentUser.name.toUpperCase()}
+                    </div>
                   </div>
                 </div>
 
@@ -342,6 +396,10 @@ export default function LabelGenerator() {
 
       <style jsx global>{`
         @media print {
+          @page {
+            size: 15cm 15cm;
+            margin: 0;
+          }
           body {
             background: #fff !important;
             padding: 0 !important;
@@ -351,11 +409,15 @@ export default function LabelGenerator() {
             display: none !important;
           }
           .print-area {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
+            display: block !important;
             width: 100% !important;
-            padding: 8px !important;
+          }
+          .thermal-label {
+            width: 15cm !important;
+            height: 15cm !important;
+            page-break-after: always;
+            margin: 0 !important;
+            box-sizing: border-box;
           }
         }
       `}</style>
@@ -364,281 +426,49 @@ export default function LabelGenerator() {
 }
 
 const styles = {
-  container: {
-    minHeight: '100vh',
-    background: '#f8fafc',
-    padding: '24px',
-    fontFamily: '"Helvetica Neue", Arial, sans-serif'
-  },
-  controlPanel: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '20px',
-    maxWidth: '950px',
-    margin: '0 auto 28px auto',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0'
-  },
-  toggleContainer: {
-    display: 'flex',
-    gap: '6px',
-    background: '#f1f5f9',
-    padding: '4px',
-    borderRadius: '8px',
-    border: '1px solid #cbd5e1'
-  },
-  toggleBtn: {
-    background: 'transparent',
-    border: 'none',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    fontSize: '11.5px',
-    fontWeight: 'bold',
-    color: '#64748b',
-    cursor: 'pointer'
-  },
-  toggleBtnActive: {
-    background: '#881337',
-    border: 'none',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    fontSize: '11.5px',
-    fontWeight: 'bold',
-    color: '#ffffff',
-    cursor: 'pointer',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  },
-  gridInputs: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: '12px',
-    marginBottom: '16px'
-  },
-  label: {
-    display: 'block',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    color: '#334155',
-    marginBottom: '6px'
-  },
-  input: {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '9px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    fontSize: '13px'
-  },
-  printBtn: {
-    background: '#881337',
-    color: '#fff',
-    border: 'none',
-    padding: '12px 20px',
-    borderRadius: '6px',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    cursor: 'pointer',
-    width: '100%'
-  },
-  labelsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 430px))',
-    gap: '16px',
-    justifyContent: 'center'
-  },
-  labelCard: {
-    background: '#ffffff',
-    border: '2.5px solid #881337',
-    borderRadius: '16px',
-    padding: '4px',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-    boxSizing: 'border-box',
-    pageBreakInside: 'avoid'
-  },
-  labelInnerBorder: {
-    border: '1.5px solid #ca8a04',
-    borderRadius: '12px',
-    padding: '8px'
-  },
-  labelHeaderDcam: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: '6px',
-    marginBottom: '6px'
-  },
-  labelHeaderAereo: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: '4px',
-    marginBottom: '4px'
-  },
-  labelHeaderPartner: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: '4px',
-    marginBottom: '4px',
-    borderBottom: '1px solid #f1f5f9'
-  },
-  logoBox: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  logoImg: {
-    maxHeight: '44px',
-    maxWidth: '120px',
-    objectFit: 'contain'
-  },
-  iconBox: {
-    flex: 0.8,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  oceanTag: {
-    fontSize: '7px',
-    fontWeight: '900',
-    color: '#881337',
-    letterSpacing: '1px',
-    marginTop: '2px'
-  },
-  airTag: {
-    fontSize: '7.5px',
-    fontWeight: 'bold',
-    color: '#64748b',
-    letterSpacing: '0.5px',
-    marginTop: '1px'
-  },
-  dividerVertical: {
-    width: '1.5px',
-    height: '42px',
-    background: '#881337',
-    margin: '0 10px'
-  },
-  headerTitleBox: {
-    flex: 1.5,
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center'
-  },
-  chineseTitle: {
-    fontSize: '16px',
-    fontWeight: '900',
-    color: '#881337',
-    letterSpacing: '3px',
-    lineHeight: '1.1'
-  },
-  chineseTitleAereo: {
-    fontSize: '13px',
-    fontWeight: '900',
-    color: '#0f172a',
-    letterSpacing: '0.5px',
-    lineHeight: '1.2'
-  },
-  chineseTitlePartner: {
-    fontSize: '20px',
-    fontWeight: '900',
-    color: '#881337',
-    letterSpacing: '2px',
-    lineHeight: '1.1'
-  },
-  companySubTitle: {
-    fontSize: '11px',
-    fontWeight: '900',
-    color: '#881337',
-    letterSpacing: '0.5px',
-    marginTop: '1px'
-  },
-  trackingHeader: {
-    fontSize: '9px',
-    fontWeight: 'bold',
-    color: '#475569',
-    marginTop: '2px'
-  },
-  dataMetaRow: {
-    display: 'grid',
-    gridTemplateColumns: '1.2fr 0.8fr 1fr',
-    gap: '6px',
-    backgroundColor: '#f8fafc',
-    padding: '4px 6px',
-    borderRadius: '6px',
-    border: '1px solid #e2e8f0',
-    marginBottom: '6px'
-  },
-  metaItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap'
-  },
-  metaLabel: {
-    fontSize: '8px',
-    fontWeight: '900',
-    color: '#881337'
-  },
-  metaValue: {
-    fontSize: '9px',
-    fontWeight: 'bold',
-    color: '#0f172a',
-    textOverflow: 'ellipsis',
-    overflow: 'hidden'
-  },
-  labelBody: {
-    display: 'flex',
-    gap: '6px'
-  },
-  sectionCol: {
-    flex: 1,
-    border: '1.5px solid #881337',
-    borderRadius: '8px',
-    padding: '4px',
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: '94px',
-    boxSizing: 'border-box'
-  },
-  badgeHeader: {
-    fontSize: '7.5px',
-    fontWeight: 'bold',
-    color: '#881337',
-    textTransform: 'uppercase',
-    borderBottom: '1px solid #f1f5f9',
-    width: '100%',
-    paddingBottom: '2px',
-    marginBottom: '2px'
-  },
-  cartonNumber: {
-    fontSize: '18px',
-    fontWeight: '900',
-    color: '#0f172a',
-    margin: 'auto 0'
-  },
-  qrWrapper: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 'auto 0'
-  },
-  customerIdText: {
-    fontSize: '8.5px',
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: '2px'
-  },
-  barcodeWrapper: {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    overflow: 'hidden'
-  }
+  loginContainer: { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: '20px' },
+  loginBox: { background: '#fff', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', textAlign: 'center', maxWidth: '320px', width: '100%', border: '1px solid #e2e8f0' },
+  loginInput: { width: '100%', padding: '14px', fontSize: '24px', textAlign: 'center', letterSpacing: '8px', border: '2px solid #cbd5e1', borderRadius: '8px', marginBottom: '16px', outline: 'none', boxSizing: 'border-box' },
+  loginBtn: { width: '100%', background: '#881337', color: '#fff', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' },
+  logoutBtn: { background: 'transparent', border: '1px solid #cbd5e1', color: '#64748b', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
+  
+  container: { minHeight: '100vh', background: '#f8fafc', padding: '24px', fontFamily: '"Helvetica Neue", Arial, sans-serif' },
+  controlPanel: { background: '#ffffff', borderRadius: '12px', padding: '20px', maxWidth: '950px', margin: '0 auto 28px auto', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' },
+  toggleContainer: { display: 'flex', gap: '6px', background: '#f1f5f9', padding: '4px', borderRadius: '8px', border: '1px solid #cbd5e1' },
+  toggleBtn: { background: 'transparent', border: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', color: '#64748b', cursor: 'pointer' },
+  toggleBtnActive: { background: '#881337', border: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', color: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+  gridInputs: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' },
+  label: { display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' },
+  input: { width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px' },
+  printBtn: { background: '#881337', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', width: '100%' },
+  labelsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 430px))', gap: '16px', justifyContent: 'center' },
+  labelCard: { background: '#ffffff', border: '2.5px solid #881337', borderRadius: '16px', padding: '4px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', boxSizing: 'border-box', pageBreakInside: 'avoid' },
+  labelInnerBorder: { border: '1.5px solid #ca8a04', borderRadius: '12px', padding: '8px', height: '100%', boxSizing: 'border-box' },
+  labelHeaderDcam: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '6px', marginBottom: '6px' },
+  labelHeaderAereo: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '4px', marginBottom: '4px' },
+  labelHeaderPartner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '4px', marginBottom: '4px', borderBottom: '1px solid #f1f5f9' },
+  logoBox: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  logoImg: { maxHeight: '44px', maxWidth: '120px', objectFit: 'contain' },
+  iconBox: { flex: 0.8, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
+  oceanTag: { fontSize: '7px', fontWeight: '900', color: '#881337', letterSpacing: '1px', marginTop: '2px' },
+  airTag: { fontSize: '7.5px', fontWeight: 'bold', color: '#64748b', letterSpacing: '0.5px', marginTop: '1px' },
+  dividerVertical: { width: '1.5px', height: '42px', background: '#881337', margin: '0 10px' },
+  headerTitleBox: { flex: 1.5, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  chineseTitle: { fontSize: '16px', fontWeight: '900', color: '#881337', letterSpacing: '3px', lineHeight: '1.1' },
+  chineseTitleAereo: { fontSize: '13px', fontWeight: '900', color: '#0f172a', letterSpacing: '0.5px', lineHeight: '1.2' },
+  chineseTitlePartner: { fontSize: '20px', fontWeight: '900', color: '#881337', letterSpacing: '2px', lineHeight: '1.1' },
+  companySubTitle: { fontSize: '11px', fontWeight: '900', color: '#881337', letterSpacing: '0.5px', marginTop: '1px' },
+  trackingHeader: { fontSize: '9px', fontWeight: 'bold', color: '#475569', marginTop: '2px' },
+  dataMetaRow: { display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr', gap: '6px', backgroundColor: '#f8fafc', padding: '4px 6px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '6px' },
+  metaItem: { display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap' },
+  metaLabel: { fontSize: '8px', fontWeight: '900', color: '#881337' },
+  metaValue: { fontSize: '9px', fontWeight: 'bold', color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden' },
+  labelBody: { display: 'flex', gap: '6px' },
+  sectionCol: { flex: 1, border: '1.5px solid #881337', borderRadius: '8px', padding: '4px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '94px', boxSizing: 'border-box' },
+  badgeHeader: { fontSize: '7.5px', fontWeight: 'bold', color: '#881337', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9', width: '100%', paddingBottom: '2px', marginBottom: '2px' },
+  cartonNumber: { fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 'auto 0' },
+  qrWrapper: { display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 'auto 0' },
+  customerIdText: { fontSize: '8.5px', fontWeight: 'bold', color: '#0f172a', marginBottom: '2px' },
+  barcodeWrapper: { width: '100%', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
+  auditWatermark: { position: 'absolute', bottom: '2px', right: '4px', fontSize: '6px', fontWeight: 'bold', color: '#94a3b8' }
 };
