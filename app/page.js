@@ -9,7 +9,7 @@ import Barcode from 'react-barcode';
 const USERS_DB = {
   '1234': { role: 'maestro', name: 'MAESTRO' },
   '836':  { role: 'operador', name: 'BODEGA 836' },
-  '1111': { role: 'operador', name: 'OPERADOR 1' },
+  '1111': { role: 'operador', name: 'MARTIN' },
   '2222': { role: 'operador', name: 'OPERADOR 2' },
   '3333': { role: 'operador', name: 'OPERADOR 3' },
   '4444': { role: 'operador', name: 'OPERADOR 4' },
